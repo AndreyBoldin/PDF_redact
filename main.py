@@ -74,7 +74,7 @@ def redact_text_on_page(page, df, page_number, round_option,  new_width, new_wid
             new_text = str(Decimal(df_page['New Value'].values[i]).quantize(Decimal(round_option)))
             if new_text == 'NaN':
                 new_text = ''
-            raw_text = str(Decimal(df_page['Old Value'].values[i]).quantize(Decimal('0.001')))
+            raw_text = str(Decimal(df_page['Old Value'].values[i]).quantize(Decimal(round_option)))
             hits = page.search_for(raw_text)
         except:
             new_text = str(df_page['New Value'].values[i])
@@ -119,6 +119,7 @@ def main():
         data_to_change = pd.read_excel(excel_file)
         unique_page_numbers = data_to_change['Page'].unique()
         round_option = col1.selectbox("Округлить значения", ['1.','0.1','0.01','0.001','0.0001','0.00001'], index=3)
+        col1.info("Необходимо выбрать ту же точность, как и в оригинальном PDF")
         new_width = col1.number_input("Подвинуть вправо(+)/влево(-)", value=0.00)
         new_width_2 = 0.00
         new_height = col1.number_input("Подвинуть вниз(+)/вверх(-)", value=0.85)
