@@ -51,7 +51,7 @@ div[data-testid="stFileUploader"]>section[data-testid="stFileUploaderDropzone"]>
 
 
 # Функция для редактирования текста в PDF
-def redact_text_on_page(page, df, page_number,  new_width, new_width_2, new_height, new_height_2):
+def redact_text_on_page(page, df, page_number, round_option,  new_width, new_width_2, new_height, new_height_2):
     """
     Заменяет текст на указанной странице документа.
 
@@ -70,11 +70,16 @@ def redact_text_on_page(page, df, page_number,  new_width, new_width_2, new_heig
     df_page = df[df['Page'] == page_number]
     
     for i, raw_text in enumerate(df_page['Old Value'].values):
-        new_text = str(Decimal(df_page['New Value'].values[i]).quantize(Decimal('0.001')))
-        if new_text == 'NaN':
-            new_text = ''
-        raw_text = str(Decimal(raw_text).quantize(Decimal('0.001')))
-        hits = page.search_for(str(raw_text))
+        try:
+            new_text = str(Decimal(df_page['New Value'].values[i]).quantize(Decimal(round_option)))
+            if new_text == 'NaN':
+                new_text = ''
+            raw_text = str(Decimal(df_page['Old Value'].values[i]).quantize(Decimal('0.001')))
+            hits = page.search_for(raw_text)
+        except:
+            new_text = str(df_page['New Value'].values[i])
+            raw_text = str(df_page['Old Value'].values[i])
+            hits = page.search_for(raw_text)
         # Добавляем аннотацию для редактирования
         for rect in hits:
             x1, y1, x2, y2 = rect
@@ -102,7 +107,6 @@ def main():
     st.set_page_config(layout="wide")
     st.title("Редактирование текста в PDF")
     st.markdown(hide_label, unsafe_allow_html=True)
-
     # Загрузка файлов
     pdf_file = st.file_uploader("Загрузите PDF файл", type="pdf")
     
@@ -113,24 +117,24 @@ def main():
         pdf_buffer = BytesIO(pdf_file.getvalue())
         doc = pymupdf.open(stream=pdf_buffer)
         data_to_change = pd.read_excel(excel_file)
-
-
+        unique_page_numbers = data_to_change['Page'].unique()
+        round_option = col1.selectbox("Округлить значения", ['1.','0.1','0.01','0.001','0.0001','0.00001'], index=3)
+        new_width = col1.number_input("Подвинуть вправо(+)/влево(-)", value=0.00)
+        new_width_2 = 0.00
+        new_height = col1.number_input("Подвинуть вниз(+)/вверх(-)", value=0.85)
+        new_height_2 = 0.00
         # Редактирование текста
-        for page_number in [3]:
-            page = doc[page_number]
+        for page_index in range(len(doc)):
+            page = doc[page_index]
 
+            redact_text_on_page(page, data_to_change, page_index, round_option, new_width, new_width_2, new_height, new_height_2)
 
-            new_width = col1.number_input("Подвинуть вправо(+)/влево(-)", value=0.00)
-            new_width_2 = 0.00
-            new_height = col1.number_input("Подвинуть вниз(+)/вверх(-)", value=0.85)
-            new_height_2 = 0.00
-
-            redact_text_on_page(page, data_to_change, page_number,new_width, new_width_2, new_height, new_height_2)
-
-            pix = page.get_pixmap(dpi=300)
-            image_data = pix.tobytes()
-            col2.image(image_data, caption=f"Modified Page {page_number}", use_column_width=True)
-        
+            # Вывод редактированной страницы
+            if page_index in unique_page_numbers:
+                pix = page.get_pixmap(dpi=300)
+                image_data = pix.tobytes()
+                col2.image(image_data, caption=f'Страница {page_index + 1}')
+                
         # BytesIO
         buffer = BytesIO()
         doc.save(buffer)
