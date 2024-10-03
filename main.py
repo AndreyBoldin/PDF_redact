@@ -57,6 +57,7 @@ def redact_text_on_page(page, df, page_number, new_width, new_width_2, new_heigh
     for i, raw_text in enumerate(df_page['Old Value'].values):
         try:
             new_text = str(df_page['New Value'].values[i])
+            raw_text = str(df_page['Old Value'].values[i])
 
             #Расчет знаков после запятой
             if '.' in raw_text:
