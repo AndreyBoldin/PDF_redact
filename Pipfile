@@ -1,9 +1,11 @@
-[[source]]
+[
+    [source
+    ]
+]
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
-
-[packages]
+name = "pypi"[packages
+]
 altair = "==5.2.0"
 annotator = "==0.14.2"
 ansi2html = "==1.8.0"
@@ -120,7 +122,7 @@ stack-data = "==0.6.2"
 statannot = "==0.2.3"
 statannotations = "==0.3.2"
 statsmodels = "==0.14.1"
-streamlit = "==1.39.0"
+streamlit = "==1.40.2"
 streamlit-option-menu = "==0.3.6"
 tenacity = "==8.2.3"
 threadpoolctl = "==3.2.0"
@@ -139,9 +141,9 @@ wcwidth = "==0.2.6"
 werkzeug = "==2.2.3"
 wrapt = "==1.17.0"
 xlsxwriter = "==3.2.0"
-zipp = "==3.17.0"
+zipp = "==3.17.0"[dev-packages
+]
 
-[dev-packages]
-
-[requires]
+[requires
+]
 python_version = "3.11"
