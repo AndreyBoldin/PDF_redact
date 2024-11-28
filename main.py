@@ -4,7 +4,11 @@ import fitz
 import pandas as pd
 from decimal import Decimal
 from io import BytesIO
-
+import PyPDF2
+from pdf2image import convert_from_path, convert_from_bytes
+import img2pdf
+from PIL import Image
+import os
 
 hide_label = """
 <style>
@@ -83,21 +87,20 @@ def redact_text_on_page(page, df, page_number, new_width, new_width_2, new_heigh
         # Координаты нового прямоугольника
         for rect in hits:
             x1, y1, x2, y2 = rect
-            new_x1 = x1 + new_width_2
+            new_x1 = x1 + new_width_2 - 15
             new_x2 = x2 + new_width
             new_y2 = y2 + new_height_2
             new_y1 = y1 + new_height
             new_rect = fitz.Rect(new_x1, new_y1, new_x2, new_y2)
 
             # Редактирование поверх старого
-            page.add_rect_annot(new_rect)
+            page.add_redact_annot(new_rect, '')
+            page.apply_redactions(text=1)
 
             page.add_freetext_annot(new_rect, new_text,
-                                    align=fitz.TEXT_ALIGN_RIGHT, border_color=(1, 1, 1), fontsize=7.85, fill_color=(1, 1, 1))
-
-
+                                    align=fitz.TEXT_ALIGN_RIGHT,fontname=page.get_fonts()[1][4], border_color=(1, 1, 1), fontsize=7.85, fill_color=(1, 1, 1))
+            
         page.apply_redactions()
-
 
 # Основная функция приложения
 def main():
@@ -132,14 +135,32 @@ def main():
                 image_data = pix.tobytes()
                 col2.image(image_data, caption=f'Страница {page_index + 1}')
                 
-        # BytesIO
+        # BytesIO 
         buffer = BytesIO()
         doc.save(buffer)
         buffer.seek(0)
-
+        
+        #Create dir buffer relative to current directory
+        if not os.path.exists("buffer"):
+            os.makedirs("buffer")
+            
+        #save pdf as png file
+        for page_index in range(len(doc)):
+            page = doc[page_index]
+            pix = page.get_pixmap(dpi=300)
+            image_data = pix.tobytes()
+            with open(f"buffer/page_{page_index + 1}.png", "wb") as f:
+                f.write(image_data)
+        
+        #Merge images to pdf using Image on individual pages
+        images = [Image.open(f"buffer/page_{i + 1}.png") for i in range(len(doc))]
+        images[0].save("buffer/intermediate_document.pdf", save_all=True, append_images=images[1:])
+        file = open("buffer/intermediate_document.pdf", "rb")
 
         # Отображение результата
-        col1.download_button("Скачать отредактированный файл", buffer, file_name="updated_document.pdf")
+        col1.download_button("Нередактируемый PDF", file, file_name="not_editable_document.pdf")
+
+        col1.download_button("Редактируемый, но с комментариями!", buffer, file_name="ediatble_document.pdf")
         col1.success("Файл успешно отредактирован!")
 
 if __name__ == "__main__":
